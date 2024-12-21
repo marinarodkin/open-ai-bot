@@ -5,6 +5,8 @@ const { sendResultToNotion } = require('./send-to-notion')
 const { Telegraf } = require('telegraf')
 const fs = require('fs');
 const path = require('path');
+const express = require('express');
+const app = express();
 
 const TELEGRAM_API_TOKEN = process.env.TELEGRAM_API_TOKEN
 
@@ -147,6 +149,15 @@ function convertToDesktopUrl(url) {
 }
 
 bot.launch() // запуск бота
+
+app.use(bot.webhookCallback('/telegram'));
+const WEBHOOK_URL = `${process.env.APP_URL}/telegram`;
+bot.telegram.setWebhook(WEBHOOK_URL);
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
 
 /*
 const server = http.createServer()
