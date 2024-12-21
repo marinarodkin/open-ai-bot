@@ -95,6 +95,16 @@ async function processQueue() {
     console.timeEnd('text')
 }
 
+async function sendMessageToOtherChannel(bot, message) {
+    const CHANNEL_ID = '-1002409262679'; // Укажите ваш chat_id или username канала
+    try {
+        await bot.telegram.sendMessage(CHANNEL_ID, message, { parse_mode: 'HTML' });
+        console.log('Message sent to channel successfully');
+    } catch (error) {
+        console.error('Failed to send message to channel:', error);
+    }
+}
+
 async function handleText(text, isSummary, link, title, author, ctx) {
     console.time('generate')
     const res = await generate(text, false, link, title, author, ctx)
@@ -102,9 +112,13 @@ async function handleText(text, isSummary, link, title, author, ctx) {
     console.log('ready: ' + res.notionLink)
     ctx.reply('Here is notion link: ' + res.notionLink)
 
+    const channelMessage = `заголовок ${title}\n автор: ${author}\n ссылка: ${link}\n\n${res.notionLink} `;
+    await sendMessageToOtherChannel(bot, channelMessage);
+
     // Create a temporary file from the result
     const filePath = path.join(__dirname, 'result.txt');
-    fs.writeFileSync(filePath, res.result);
+    const content = typeof res.result === 'string' ? res.result : JSON.stringify(res.result, null, 2);
+    fs.writeFileSync(filePath, content, { encoding: 'utf8' });
 
     // Send the file to the user
     await ctx.telegram.sendDocument(ctx.chat.id, {
@@ -162,39 +176,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
-
-/*
-const server = http.createServer()
-
-server.on('request', async (req, res) => {
-  if (req.method === 'OPTIONS') {
-    res.writeHead(200, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST',
-      'Access-Control-Allow-Headers': 'Content-Type'
-    })
-    res.end()
-  } else if (req.method === 'POST') {
-    let body = ''
-    req.on('data', chunk => {
-      body += chunk.toString()
-    })
-    req.on('end', async () => {
-      const { text, isSummary, url, title } = JSON.parse(body)
-      const generatedResult = await generate(text, isSummary, url, title)
-      // const generatedResult = { result: text, link: 'https://www.notion.so/new-summary-786f218cb7224265bff3355d27701e13' }
-            res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
-      res.end(JSON.stringify(generatedResult))
-    })
-  } else {
-    res.writeHead(404)
-    res.end()
-  }
-})
-
-const port = process.env.PORT || 3001
-server.listen(port, () => {
-  console.log(`Server is listening on port ${port}...`)
-})
-
-*/
