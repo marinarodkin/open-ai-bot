@@ -8,12 +8,13 @@ const configuration = new Configuration({
 });
 // const openai = new OpenAIApi(configuration);
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+const OPENAI_API_KEY = `Bearer ${process.env.OPENAI_API_KEY}`
+console.log('!!!!!OPENAI_API_KEY', OPENAI_API_KEY)
 
 const config = {
     headers: {
         'Content-Type': 'application/json',
-        'Authorization': OPENAI_API_KEY,
+        'Authorization': OPENAI_API_KEY
     }
 };
 
@@ -67,14 +68,6 @@ function findTail(text) {
 
 async function setRequest(text, isSummary) {
     const currentText = generatePrompt(text, isSummary)
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY
-    console.log('!!!!!OPENAI_API_KEY', OPENAI_API_KEY)
-    const config = {
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': OPENAI_API_KEY,
-        }
-    };
     const data = {
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: currentText }],
