@@ -149,7 +149,11 @@ function convertToDesktopUrl(url) {
 }
 
 bot.launch() // запуск бота
-
+bot.telegram.deleteWebhook().then(() => {
+    console.log('Previous webhook deleted');
+}).catch((err) => {
+    console.error('Failed to delete webhook:', err);
+});
 app.use(bot.webhookCallback('/telegram'));
 const WEBHOOK_URL = `${process.env.APP_URL}/telegram`;
 bot.telegram.setWebhook(WEBHOOK_URL);
