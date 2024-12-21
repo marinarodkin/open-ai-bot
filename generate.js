@@ -72,7 +72,8 @@ async function setRequest(text, isSummary) {
         messages: [{ role: 'user', content: currentText }],
         temperature: 0.1,
     };
-
+    console.log('set request')
+    console.log('config', config)
     try {
         // console.log('data', data, data.messages[0])
         return axios.post('https://api.openai.com/v1/chat/completions', data, config)
@@ -80,7 +81,7 @@ async function setRequest(text, isSummary) {
                 // const result = findTail(response.data.choices[0].message.content)
                 // console.log('res', response.data.choices[0].message.content)
                 const result = response.data.choices[0].message.content
-                console.log('result', result)
+                console.log('!!!!result', result)
                 if (!result || result === '') {
                     console.log('!! result bug !!response.data', response.data)
                 }
@@ -92,7 +93,7 @@ async function setRequest(text, isSummary) {
                 // console.log(error?.data?.error);
             });
     } catch(error) {
-        // console.log(error)
+        console.log('!!!!error', error)
         // console.log(c)
     }
 }
