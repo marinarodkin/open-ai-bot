@@ -67,13 +67,21 @@ function findTail(text) {
 
 async function setRequest(text, isSummary) {
     const currentText = generatePrompt(text, isSummary)
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+    console.log('!!!!!OPENAI_API_KEY', OPENAI_API_KEY)
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': OPENAI_API_KEY,
+        }
+    };
     const data = {
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: currentText }],
         temperature: 0.1,
     };
     console.log('set request')
-    console.log('config', config)
+    console.log('!!!!!config', config)
     try {
         // console.log('data', data, data.messages[0])
         return axios.post('https://api.openai.com/v1/chat/completions', data, config)
