@@ -1,7 +1,6 @@
 require('dotenv').config()
 const { generate } = require('./generate')
 const { scraping } = require('./scraping')
-const { sendResultToNotion } = require('./send-to-notion')
 const { Telegraf } = require('telegraf')
 const fs = require('fs');
 const path = require('path');

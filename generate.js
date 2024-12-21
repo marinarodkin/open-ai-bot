@@ -9,7 +9,6 @@ const configuration = new Configuration({
 // const openai = new OpenAIApi(configuration);
 
 const OPENAI_API_KEY = `Bearer ${process.env.OPENAI_API_KEY}`
-console.log('!!!!!OPENAI_API_KEY', OPENAI_API_KEY)
 
 const config = {
     headers: {
