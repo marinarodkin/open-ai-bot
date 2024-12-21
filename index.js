@@ -148,7 +148,7 @@ function convertToDesktopUrl(url) {
     return desktopUrl;
 }
 
-// bot.launch() // запуск бота
+bot.launch() // запуск бота
 bot.telegram.deleteWebhook().then(() => {
     console.log('Previous webhook deleted');
 }).catch((err) => {
