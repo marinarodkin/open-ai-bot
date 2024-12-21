@@ -1,0 +1,4 @@
+ode_modules
+.vscode
+config/default.json
+.env
