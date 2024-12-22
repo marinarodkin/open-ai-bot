@@ -12,10 +12,11 @@ const TELEGRAM_API_TOKEN = process.env.TELEGRAM_API_TOKEN
 const bot = new Telegraf(TELEGRAM_API_TOKEN)
 const queue = []
 
-bot.start((ctx) => ctx.reply('Send me a link'))
+bot.start((ctx) => ctx.reply('Send me a link or a text file'))
 bot.on('text', async (ctx) => {
     const linkFromTel = ctx.message.text
     const isValidLink = isValidYouTubeLink(linkFromTel)
+    const isText = ctx.message.text.length > 500
 
     if (!isValidLink) {
         ctx.reply('link is not valid, send me a valid YouTube link')
@@ -31,6 +32,31 @@ bot.on('text', async (ctx) => {
         }
     }
 })
+
+bot.on('document', async (ctx) => {
+    const file = ctx.message.document;
+
+    // Проверяем, что файл текстовый
+    if (!file.mime_type || file.mime_type !== 'text/plain') {
+        return ctx.reply('Please send a valid text file (.txt)');
+    }
+
+    try {
+        // Получаем ссылку на файл
+        const fileLink = await ctx.telegram.getFileLink(file.file_id);
+
+        // Загружаем содержимое файла
+        const response = await fetch(fileLink.href);
+        const text = await response.text();
+
+        // Передаем текст на обработку
+        ctx.reply('File received. Processing...');
+        await handleText(text,false, 'text from file', 'text from file', 'text from file', ctx)
+    } catch (err) {
+        console.error('Error processing file:', err);
+        ctx.reply('An error occurred while processing the file.');
+    }
+});
 
 async function processQueue() {
     if (queue.length === 0) {
