@@ -20,6 +20,7 @@ const config = {
 async function handleChunks(chunks, isSummary) {
     try {
         const result = [];
+        const translation = []
         let currentTail = '';
         for (let i = 0; i < chunks.length; i++) {
             console.time('chunk')
@@ -27,10 +28,19 @@ async function handleChunks(chunks, isSummary) {
             console.log('chunks - [', i, '] ',chunks[i].length)
             const currentChunk = `${currentTail}${chunks[i]}`;
             const resultFromAI = await setRequest(currentChunk, isSummary);
+
             if(resultFromAI) {
                 console.log('piece N', i, 'currentChunk.length - ', currentChunk.length, 'resultFromAI.length- ', resultFromAI?.completeText?.length)
                 console.log('resultFromAI.tail', resultFromAI.tail)
+                const language = await getLanguage(resultFromAI.completeText);
+                let translationFromAi
+                if (language !== 'Russian') {
+                    translationFromAi = await getTranslation(resultFromAI.completeText)
+                }
                 result.push(resultFromAI.completeText);
+                if (translationFromAi) {
+                    translation.push(translationFromAi)
+                }
                 console.log('!!!result when i=', i)
                 result.forEach((item, index) => {
                     console.log('N', i)
@@ -43,7 +53,7 @@ async function handleChunks(chunks, isSummary) {
                 console.timeEnd('chunk')
             }
         }
-        return result;
+        return { result, translation }
     } catch (error) {
         console.log(error);
     }
@@ -98,6 +108,32 @@ async function setRequest(text, isSummary) {
     }
 }
 
+function getTranslation(text) {
+    // get translation from chatgpt
+    const currentText = generateTranslationPrompt(text)
+    const data = {
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: currentText }],
+        temperature: 0.1,
+    };
+    try {
+        return axios.post('https://api.openai.com/v1/chat/completions', data, config)
+            .then((response) => {
+                // const result = findTail(response.data.choices[0].message.content)
+                // console.log('res', response.data.choices[0].message.content)
+                return  response.data.choices[0].message.content
+            })
+            .catch((error) => {
+                console.log('error')
+                console.log(JSON.stringify(error, null, 2));
+                // console.log(error?.data?.error);
+            });
+    } catch(error) {
+        console.log('!!!!error', error)
+        // console.log(c)
+    }
+}
+
 function getLanguage(text) {
     const textExample = text.length < 300 ? text : text.substring(0, 300)
     const languages = {
@@ -114,15 +150,14 @@ function getLanguage(text) {
     }
 }
 
+function generateTranslationPrompt(text, isSummary) {
+    const lang = getLanguage(text)
+    return `I provide you with a text in ${lang}, which is part of an audio transcript. Your task is to translate this text into Russian. Do not change sense, do not remove, shorten or add anything, here is my text: ${text}`;
+}
 
 function generatePrompt(text, isSummary) {
     const lang = getLanguage(text)
-    /*
-    if (isSummary) {
-      return `I give you text in ${lang}, this is a part of audio trancribing  please write me a summary in ${lang}, do not change sense, try to keep exapmles, is there some points include all of them, here is my text: ${text}`;
-    }
-     */
-    return `I provide you with a text in ${lang}, which is part of an audio transcript. Your task is to transform this automated YouTube transcript into readable text: break it into meaningful sentences and paragraphs, apply correct punctuation, remove interjections or filler words, correct any misrecognized words, and format it as a dialogue if it’s an interview. Do not shorten the text, change its meaning, or add any new content; focus solely on improving readability. ${text}`;
+    return `I provide you with a text in ${lang}, which is part of an audio transcript. Your task is to transform this automated YouTube transcript into readable text: break it into meaningful sentences and paragraphs, apply correct punctuation, remove interjections or filler words, correct any misrecognized words, and format it as a dialogue if it’s an interview. Do not shorten the text, do not change its meaning, do not add any new content; focus solely on improving readability. ${text}`;
 }
 
 function removeTimecodes(text) {
@@ -161,16 +196,23 @@ exports.generate = async (text, isSummary, url, title, author, ctx) => {
 
     try {
         console.log('total chunks - ', chunks.length)
-        const resultFromAi = await handleChunks(chunks, isSummary)
+        const results = await handleChunks(chunks, isSummary)
+        const resultFromAi = results.result
+        const translation = results.translation
         console.log('input length', text.length)
         if (resultFromAi) {
             console.log('output length', resultFromAi.join('').length)
             ctx.reply('input length --' + text.length)
             ctx.reply( 'output length - ' + resultFromAi.join('').length)
+            let notionResTranslation
             try {
                 const notionRes = await sendResultToNotion(title, resultFromAi.join(''), url)
+                if (translation) {
+                    notionResTranslation = await sendResultToNotion(title, translation.join(''), url)
+                }
                 const notionLink = notionRes ? notionRes.url : ''
-                return { result: resultFromAi.join(''), notionLink };
+                const notionLinkTranslation = notionResTranslation ? notionResTranslation.url : ''
+                return { result: resultFromAi.join(''), notionLink, notionLinkTranslation };
             } catch (err) {
                 console.log(err)
                 try {

@@ -135,9 +135,18 @@ async function handleText(text, isSummary, link, title, author, ctx) {
     const res = await generate(text, false, link, title, author, ctx)
     console.timeEnd('generate')
     console.log('ready: ' + res.notionLink)
-    ctx.reply('Here is notion link: ' + res.notionLink)
+    if (res.notionLinkTranslation) {
+        ctx.reply(`Here is notion link: ${res.notionLink} \n 'Here is translation link: ${res.notionLinkTranslation} \n`)
+    } else {
+        ctx.reply('Here is notion link: ' + res.notionLink)
+    }
+    console.log('res', res)
 
-    const channelMessage = `заголовок ${title}\n автор: ${author}\n ссылка: ${link}\n\n${res.notionLink} `;
+    let channelMessage = `ЗАГОЛОВОК: ${title}\n АВТОР: ${author}\n ССЫЛКА: ${link}\n\n${res.notionLink}\n `;
+    if (res.notionResTranslation) {
+        console.log('res.notionResTranslation', res.notionResTranslation)
+        channelMessage = `ЗАГОЛОВОК:  ${title}\n автор: ${author}\n ССЫЛКА: ${link}\n\n${res.notionLink}\n\n ПЕРЕВОД: ${res.notionResTranslation}\n `;
+    }
     await sendMessageToOtherChannel(bot, channelMessage);
 
     // Create a temporary file from the result
@@ -150,9 +159,20 @@ async function handleText(text, isSummary, link, title, author, ctx) {
         source: filePath,
         filename: 'result.txt'
     });
-
     // Remove the temporary file
     fs.unlinkSync(filePath);
+
+    if (res.notionResTranslation) {
+        const filePathTranslation = path.join(__dirname, 'resultTranslation.txt');
+        const contentTranslation = typeof res.notionResTranslation === 'string' ? res.notionResTranslation : JSON.stringify(res.notionResTranslation, null, 2);
+        fs.writeFileSync(filePathTranslation, contentTranslation, { encoding: 'utf8' });
+        // Send the file to the user
+        await ctx.telegram.sendDocument(ctx.chat.id, {
+            source: filePathTranslation,
+            filename: 'resultTranslation.txt'
+        });
+        fs.unlinkSync(filePathTranslation);
+    }
 }
 
 
